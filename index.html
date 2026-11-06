@@ -124,7 +124,9 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
       <label for="e">Email</label><input id="e" name="email" type="email" required autocomplete="email">
       <label for="c">Company</label><input id="c" name="company" autocomplete="organization">
       <label for="m">What do you need?</label><textarea id="m" name="message" required></textarea>
-      <button type="submit">Send message</button>
+      <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+      <button type="submit" id="sendbtn">Send message</button>
+      <p id="fstatus" role="status" aria-live="polite" style="margin-top:12px;font-size:14px;min-height:1.2em"></p>
     </form>
   </div>
 </section>
@@ -138,12 +140,28 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
 <script>
 document.getElementById('y').textContent=new Date().getFullYear();
-document.getElementById('cform').addEventListener('submit',e=>{
+document.getElementById('cform').addEventListener('submit',async e=>{
   e.preventDefault();
-  const f=e.target;
-  const s=encodeURIComponent('Ixira Labs enquiry — '+f.name.value+(f.company.value?' ('+f.company.value+')':''));
-  const b=encodeURIComponent(f.message.value+'\n\n— '+f.name.value+'\n'+f.email.value+(f.company.value?'\n'+f.company.value:''));
-  location.href='mailto:jaganmohan@ixiralabs.com?subject='+s+'&body='+b;
+  const f=e.target, btn=document.getElementById('sendbtn'), st=document.getElementById('fstatus');
+  if(f._honey.value) return;
+  btn.disabled=true; btn.textContent='Sending…'; st.textContent=''; st.style.color='';
+  try{
+    const r=await fetch('https://formsubmit.co/ajax/jaganmohan@ixiralabs.com',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        name:f.name.value, email:f.email.value, company:f.company.value, message:f.message.value,
+        _subject:'Ixira Labs enquiry — '+f.name.value+(f.company.value?' ('+f.company.value+')':''),
+        _replyto:f.email.value, _template:'table'
+      })
+    });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok || j.success===false || j.success==='false') throw new Error(j.message||'failed');
+    f.reset(); st.style.color='var(--accent)'; st.textContent="Thanks! Your message has been sent — we'll get back to you soon.";
+  }catch(err){
+    st.style.color='#b42318';
+    st.innerHTML='Sorry, that didn\'t go through. Please email us at <a href="mailto:jaganmohan@ixiralabs.com" style="text-decoration:underline">jaganmohan@ixiralabs.com</a>.';
+  }finally{ btn.disabled=false; btn.textContent='Send message'; }
 });
 </script>
 </body>
