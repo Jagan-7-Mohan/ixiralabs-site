@@ -146,7 +146,8 @@ document.getElementById('cform').addEventListener('submit',async e=>{
   if(f._honey.value) return;
   btn.disabled=true; btn.textContent='Sending…'; st.textContent=''; st.style.color='';
   try{
-    const r=await fetch('https://formsubmit.co/ajax/jaganmohan@ixiralabs.com',{
+    const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),12000);
+    const r=await fetch('https://formsubmit.co/ajax/jaganmohan@ixiralabs.com',{signal:ctl.signal,
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
@@ -155,12 +156,17 @@ document.getElementById('cform').addEventListener('submit',async e=>{
         _replyto:f.email.value, _template:'table'
       })
     });
+    clearTimeout(tm);
     const j=await r.json().catch(()=>({}));
     if(!r.ok || j.success===false || j.success==='false') throw new Error(j.message||'failed');
     f.reset(); st.style.color='var(--accent)'; st.textContent="Thanks! Your message has been sent — we'll get back to you soon.";
   }catch(err){
+    const s=encodeURIComponent('Ixira Labs enquiry — '+f.name.value+(f.company.value?' ('+f.company.value+')':''));
+    const b=encodeURIComponent(f.message.value+'\n\n— '+f.name.value+'\n'+f.email.value+(f.company.value?'\n'+f.company.value:''));
+    const href='mailto:jaganmohan@ixiralabs.com?subject='+s+'&body='+b;
     st.style.color='#b42318';
-    st.innerHTML='Sorry, that didn\'t go through. Please email us at <a href="mailto:jaganmohan@ixiralabs.com" style="text-decoration:underline">jaganmohan@ixiralabs.com</a>.';
+    st.innerHTML='Our form is having trouble — we\'ve opened your email app with your message. If nothing opened, <a href="'+href+'" style="text-decoration:underline">click here</a> or email <a href="mailto:jaganmohan@ixiralabs.com" style="text-decoration:underline">jaganmohan@ixiralabs.com</a>.';
+    location.href=href;
   }finally{ btn.disabled=false; btn.textContent='Send message'; }
 });
 </script>
